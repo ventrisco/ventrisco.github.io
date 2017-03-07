@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>data management ii parsing &middot; </title>
+        <meta name="description" content="Data Structure We&rsquo;ve got our data, now what do we do with it? Rather than insert each line into the database separately we&rsquo;re going use Postgresql&rsquo;s copy from function to perform a bulk insert. Before we do that we have to write the data to file.
+Let&rsquo;s take a look at our data and think about how we want to parse the data and set up our table.
+Date,Open,High,Low,Close,Volume,Adj Close 2017-02-13,133.">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.18.1" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://ventrisco.github.io/site/dist/styles.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+    </head>
+    <body>
+        
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Ventris &amp; Co" href="https://ventrisco.github.io/site/">Ventris &amp; Co</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://ventrisco.github.io/site/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Github" title="Github" href="https://github.com/ventrisco">
+                                <i class="fa fa-github-alt"></i>
+                            </a>
+                        
+                        
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Email" title="Email" href="mailto:m@ventris.co">
+                                <i class="fa fa-envelope"></i>
+                            </a>
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">data management ii parsing</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2017-02-22" itemprop="datePublished">Wed, Feb 22, 2017</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="https://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author"></a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    
+
+<h3 id="data-structure">Data Structure</h3>
+
+<p>We&rsquo;ve got our data, now what do we do with it? Rather than insert each line into the database separately we&rsquo;re going use Postgresql&rsquo;s <code>copy from</code> function to perform a bulk insert. Before we do that we have to write the data to file.</p>
+
+<p>Let&rsquo;s take a look at our data and think about how we want to parse the data and set up our table.</p>
+
+<pre><code>Date,Open,High,Low,Close,Volume,Adj Close
+2017-02-13,133.080002,133.820007,132.75,133.289993,22926400,133.289993
+2017-02-10,132.460007,132.940002,132.050003,132.119995,20065500,132.119995
+</code></pre>
+
+<p>It&rsquo;s obvious that we&rsquo;ll need a table with the columns <code>date, open, high, low, close, volume, and adj_close</code>. But what about our ticker symbol. One way to attack the problem is to create a table for each ticker symbol. Although this will work, if we have more than a couple ticker symbols, managing all those tables would be a mess and you would probably have to keep track of your data in the  application layer.</p>
+
+<p>For sanity&rsquo;s sake, we&rsquo;re going to use a single table for our historical data with all of the columns mentioned above and another column labeled <code>ticker</code>. This requires us to split the data on each line and add the ticker symbol at the beginning of each line before we write it to disk. In our example, a written line should look like this:</p>
+
+<pre><code>AAPL, 2017-02-13,133.080002,133.820007,132.75,133.289993,22926400,133.289993
+AAPL, 2017-02-10,132.460007,132.940002,132.050003,132.119995,20065500,132.119995
+</code></pre>
+
+<p>Now that we know what we&rsquo;re trying to do let&rsquo;s take a look at some code.</p>
+
+<pre><code># initialize data.txt
+f = open('/tmp/data.txt', 'w')
+f.close()
+
+# Parse and write data
+for d in data:
+    Date, Open, High, Low, Close, Volume, Adj_Close = d.split(',')
+    data_string = '%s,%s,%s,%s,%s,%s,%s,%s' % (TICKER, Date, Open, High, Low, Close, Volume, Adj_Close)
+    f = open('/tmp/data.txt', 'a')
+    f.write(data_string)
+    f.close()
+</code></pre>
+
+<p>First we initialize <code>/tmp/data.txt</code> so that we have an empty file we can append. If you don&rsquo;t do this, you might have data left over from the last time you ran this script.</p>
+
+<p>For every line <code>d</code> in <code>data</code>, we split the line on the commas so that each field gets mapped to their corresponding variable. Next, <code>data_string</code> represents a new line with the ticker symbol prepended to it. This new line then gets written to <code>/tmp/data.txt</code>.</p>
+
+<p>Now that we have our data written to disk let&rsquo;s copy it to our Postgresql cluster.</p>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+
+    <div class="share">
+        
+            <a class="icon-twitter" href="https://twitter.com/share?text=data%20management%20ii%20parsing&url=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2fdata-management-ii-parsing%2f"
+                onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                <i class="fa fa-twitter"></i>
+                <span class="hidden">Twitter</span>
+            </a>
+        
+
+        
+            <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2fdata-management-ii-parsing%2f"
+                onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                <i class="fa fa-facebook"></i>
+                <span class="hidden">Facebook</span>
+            </a>
+        
+
+        
+            <a class="icon-google-plus" href="https://plus.google.com/share?url=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2fdata-management-ii-parsing%2f"
+              onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+              <i class="fa fa-google-plus"></i>
+                <span class="hidden">Google+</span>
+            </a>
+        
+        
+    </div>
+</footer>
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'ventrisco';
+    var disqus_identifier = 'https:\/\/ventrisco.github.io\/site\/blog\/data-management-ii-parsing\/';
+    var disqus_title = 'data management ii parsing';
+    var disqus_url = 'https:\/\/ventrisco.github.io\/site\/blog\/data-management-ii-parsing\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Ventris &amp; Co" href="https://ventrisco.github.io/site/">Ventris &amp; Co</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+
+                <p class="footer-copyright">
+                    <span>&copy; 2017 / Powered by <a href="https://gohugo.io/">Hugo</a></span>
+                </p>
+                <p class="footer-copyright">
+                    <span><a href="https://github.com/roryg/ghostwriter">Ghostwriter theme</a> By <a href="http://jollygoodthemes.com">JollyGoodThemes</a></span>
+                    <span>/ <a href="https://github.com/jbub/ghostwriter">Ported</a> to Hugo By <a href="https://github.com/jbub">jbub</a></span>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://ventrisco.github.io/site/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+        <script src="https://ventrisco.github.io/site/js/jquery.fitvids.js"></script>
+        <script src="https://ventrisco.github.io/site/js/scripts.js"></script>
+    </body>
+</html>
+

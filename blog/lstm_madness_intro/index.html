@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>LSTM Madness/00/Intro &middot; </title>
+        <meta name="description" content="Jumping right in My original intent with this site was to gradually introduce tools and techniques to apply to quantitative finance with open source tools. I&rsquo;m still doing the introducing but dropping the gradual by going straight into applying neural networks to financial data.
+Deep learning with neural networks is all the rage right now so I started messing with it a week ago. Rather than toil on my own I&rsquo;m going to share my process of trying to get my head around neural networks and finding a model with tradeable signals.">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.18.1" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://ventrisco.github.io/site/dist/styles.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+    </head>
+    <body>
+        
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Ventris &amp; Co" href="https://ventrisco.github.io/site/">Ventris &amp; Co</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://ventrisco.github.io/site/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Github" title="Github" href="https://github.com/ventrisco">
+                                <i class="fa fa-github-alt"></i>
+                            </a>
+                        
+                        
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Email" title="Email" href="mailto:m@ventris.co">
+                                <i class="fa fa-envelope"></i>
+                            </a>
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">LSTM Madness/00/Intro</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2017-03-06" itemprop="datePublished">Mon, Mar 6, 2017</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="https://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author"></a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    
+
+<h1 id="jumping-right-in">Jumping right in</h1>
+
+<p>My original intent with this site was to gradually introduce tools and techniques to apply to quantitative finance with open source tools.  I&rsquo;m still doing the introducing but dropping the gradual by going straight into applying neural networks to financial data.</p>
+
+<p>Deep learning with neural networks is all the rage right now so I started messing with it a week ago. Rather than toil on my own I&rsquo;m going to share my process of trying to get my head around neural networks and finding a model with tradeable signals.</p>
+
+<h1 id="prejudices">Prejudices</h1>
+
+<p>Before we start I&rsquo;m going to go on record and say that neural networks probably won&rsquo;t provide any tradeable signals. The reason behind my bias is that security prices are essentially random and it seems as if neural networks are getting the best results in the real world when they are applied to data with &ldquo;hard edges&rdquo;. Because seucrity prices are essentially randome there aren&rsquo;t really any &ldquo;hard edges&rdquo; in finance so intuitively it seems that neural networks will generally meander. Having said this, I hope to be proven wrong.</p>
+
+<h1 id="lstm-xlf">LSTM + XLF</h1>
+
+<p>I&rsquo;m going to try and set up a recurrent neural network on XLF price data. The XLF is an ETF that mirrors a basket of financial stocks. We could use the SP500 or an ETF that tracks the SP500 but I thought it would be easier to work an ETF with less components.</p>
+
+<p>For our neural network, we&rsquo;ll be using Long Short-Term Memory (&ldquo;LSTM&rdquo;). I approach machine learning models the same way I approach databases, I just want to learn to use them, I don&rsquo;t care how they work. As a result, I&rsquo;ll let <a href="http://colah.github.io/posts/2015-08-Understanding-LSTMs/">other</a> <a href="https://deeplearning4j.org/lstm">sites</a> walk you through the wonders of LSTM but for our purposes the important thing you need to know is that they not only allow you to train on features but also allows you to train on the time series of those features as well. This should come in handy when trying to predict our time series data.</p>
+
+<h1 id="the-toolbox">The Toolbox</h1>
+
+<p>I&rsquo;m going to be using <a href="https://keras.io/">Keras</a> with <a href="https://www.tensorflow.org/">Tensor Flow</a> as the backend. Keras doesn&rsquo;t support Tensor Flow 1.0 unless you install Keras 2.0 which is a real pain to install so we&rsquo;ll use Keras with Tensor Flow 0.12.  You&rsquo;ll need Python and Postgresql installed on your machine. In the github repo, you&rsquo;ll find a <code>requirements.txt</code> with the dependencies you need. If you don&rsquo;t use it already, you should also load virtualenv to sandbox your Python environment.</p>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+
+    <div class="share">
+        
+            <a class="icon-twitter" href="https://twitter.com/share?text=LSTM%20Madness%2f00%2fIntro&url=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2flstm_madness_intro%2f"
+                onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                <i class="fa fa-twitter"></i>
+                <span class="hidden">Twitter</span>
+            </a>
+        
+
+        
+            <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2flstm_madness_intro%2f"
+                onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                <i class="fa fa-facebook"></i>
+                <span class="hidden">Facebook</span>
+            </a>
+        
+
+        
+            <a class="icon-google-plus" href="https://plus.google.com/share?url=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2flstm_madness_intro%2f"
+              onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+              <i class="fa fa-google-plus"></i>
+                <span class="hidden">Google+</span>
+            </a>
+        
+        
+    </div>
+</footer>
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'ventrisco';
+    var disqus_identifier = 'https:\/\/ventrisco.github.io\/site\/blog\/lstm_madness_intro\/';
+    var disqus_title = 'LSTM Madness\/00\/Intro';
+    var disqus_url = 'https:\/\/ventrisco.github.io\/site\/blog\/lstm_madness_intro\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Ventris &amp; Co" href="https://ventrisco.github.io/site/">Ventris &amp; Co</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+
+                <p class="footer-copyright">
+                    <span>&copy; 2017 / Powered by <a href="https://gohugo.io/">Hugo</a></span>
+                </p>
+                <p class="footer-copyright">
+                    <span><a href="https://github.com/roryg/ghostwriter">Ghostwriter theme</a> By <a href="http://jollygoodthemes.com">JollyGoodThemes</a></span>
+                    <span>/ <a href="https://github.com/jbub/ghostwriter">Ported</a> to Hugo By <a href="https://github.com/jbub">jbub</a></span>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://ventrisco.github.io/site/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+        <script src="https://ventrisco.github.io/site/js/jquery.fitvids.js"></script>
+        <script src="https://ventrisco.github.io/site/js/scripts.js"></script>
+    </body>
+</html>
+

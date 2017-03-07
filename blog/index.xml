@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Blogs on Ventris &amp; Co</title>
+    <link>https://ventrisco.github.io/site/blog/index.xml</link>
+    <description>Recent content in Blogs on Ventris &amp; Co</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 06 Mar 2017 21:27:23 -0800</lastBuildDate>
+    <atom:link href="https://ventrisco.github.io/site/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>LSTM Madness/01/Data Prep</title>
+      <link>https://ventrisco.github.io/site/blog/lstm_madness_01/</link>
+      <pubDate>Mon, 06 Mar 2017 21:27:23 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/site/blog/lstm_madness_01/</guid>
+      <description>
+
+&lt;h1 id=&#34;yahoo&#34;&gt;Yahoo!&lt;/h1&gt;
+
+&lt;p&gt;Look at the previous posts about how to get data from Yahoo and use that to create a script to get the historical data from the XLF and each of its components. Don’t know the XLF components by heart? You can find them right here.&lt;/p&gt;
+
+&lt;p&gt;If that’s too much for you, you can just run &lt;code&gt;python main.py&lt;/code&gt; in &lt;code&gt;/get_yahoo_data&lt;/code&gt; of this repo. You’re going to have to run it twice, once for the components and once for just the XLF price series. Save them to different buffers because we’re going to copy them to different tables.&lt;/p&gt;
+
+&lt;h1 id=&#34;in-the-beginning&#34;&gt;In the beginning&lt;/h1&gt;
+
+&lt;p&gt;So that we’re on the same page, let’s create a new user and database.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;CREATE USER ventris_admin WITH PASSWORD &#39;X4NAdu&#39;;
+ALTER ROLE ventris_admin WITH SUPERUSER;
+CREATE DATABASE ventris WITH OWNER ventris_admin;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now you should be able to login into your database like so:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;psql -d ventris -U ventris_admin -h 127.0.0.1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you followed the instructions above, you should have two files, one with just the XLF price data and the other with the price data for all of its components. Let’s create two tables to copy the data into.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;DROP TABLE IF EXISTS xlf_components_data;
+CREATE TABLE xlf_components_data (
+  ticker text
+, dt date
+, open numeric
+, high numeric
+, low numeric
+, close numeric
+, volume numeric
+, adj_close numeric
+);
+
+COPY xlf_components_data FROM &#39;&amp;lt;YOUR FILEPATH HERE&amp;gt;&#39; WITH DELIMITER &#39;,&#39;;
+
+DROP TABLE IF EXISTS xlf_etf_data;
+CREATE TABLE xlf_etf_data (
+  ticker text
+, dt date
+, open numeric
+, high numeric
+, low numeric
+, close numeric
+, volume numeric
+, adj_close numeric
+);
+
+COPY xlf_etf_data FROM &#39;&amp;lt;YOUR XLF FILEPATH HERE&amp;gt;&#39; WITH DELIMITER &#39;,&#39;;
+Calculate Returns
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now that we have our price data loaded let’s derive a table of returns for each of these tables. You calculate the return by taking today&amp;rsquo;s close - yesterday&amp;rsquo;s close and dividing the result by yesterday&amp;rsquo;s close. Calculating the returns kills two birds with one stone. It normalizes our data and provides us with a table to help us calculate how much money we made.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;-- Create returns based on the days&#39;s close
+DROP TABLE IF EXISTS xlf_components_returns;
+CREATE TABLE xlf_components_returns AS
+SELECT
+  dt
+, ticker
+, CASE
+    WHEN LAG(close, 1) OVER (PARTITION BY ticker ORDER BY dt) &amp;gt; 0
+      THEN (close - LAG(close, 1) OVER (PARTITION BY ticker ORDER BY dt)) / LAG(close, 1) OVER (PARTITION BY ticker ORDER BY dt)
+    ELSE NULL END AS ret
+FROM xlf_components_data;
+
+-- Create returns of xlf
+DROP TABLE IF EXISTS xlf_returns;
+CREATE TABLE xlf_returns AS
+SELECT
+  dt
+, ticker
+, CASE
+    WHEN LAG(close, 1) OVER (PARTITION BY ticker ORDER BY dt) &amp;gt; 0
+      THEN (close - LAG(close, 1) OVER (PARTITION BY ticker ORDER BY dt)) / LAG(close, 1) OVER (PARTITION BY ticker ORDER BY dt)
+    ELSE NULL END AS ret
+FROM xlf_etf_data;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This should be pretty straightforward. If Postgresql’s window functions are new to you, you should stop and read up on them. Window functions are indispensable for backtests and is really the most under appreciated feature of Postgresql.&lt;/p&gt;
+
+&lt;p&gt;The last thing we have to do is create a table with XLF’s next day’s returns. This will be the Y value for fitting our models and is just like our returns table except the returns are offset by one day. For example, our XLF returns table looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;dt     | ticker |           ret           
+------------+--------+-------------------------
+1998-12-22 | xlf    |                        
+1998-12-23 | xlf    |  0.01474535247145115037
+1998-12-24 | xlf    |  0.00660497782213908891
+1998-12-28 | xlf    | -0.01312336068227701268
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;While our xlf_next_day_returns table looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;dt     | ticker |           ret           
+------------+--------+-------------------------
+1998-12-22 | xlf    |  0.01474535247145115037
+1998-12-23 | xlf    |  0.00660497782213908891
+1998-12-24 | xlf    | -0.01312336068227701268
+1998-12-28 | xlf    |  0.01063829877772755555
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;We could create these returns when we do our SQL calls but I find that it’s cleaner to just create a table with those returns:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;DROP TABLE IF EXISTS xlf_next_day_returns;
+CREATE TABLE xlf_next_day_returns AS
+SELECT
+  dt
+, ticker
+, CASE
+    WHEN LEAD(close, 1) OVER (PARTITION BY ticker ORDER BY dt) &amp;gt; 0
+      THEN (LEAD(close, 1) OVER (PARTITION BY ticker ORDER BY dt) - close) / close
+    ELSE NULL END AS ret
+FROM xlf_etf_data;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now that you can follow along at home, let’s build our first neural network!&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>LSTM Madness/00/Intro</title>
+      <link>https://ventrisco.github.io/site/blog/lstm_madness_intro/</link>
+      <pubDate>Mon, 06 Mar 2017 10:06:01 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/site/blog/lstm_madness_intro/</guid>
+      <description>
+
+&lt;h1 id=&#34;jumping-right-in&#34;&gt;Jumping right in&lt;/h1&gt;
+
+&lt;p&gt;My original intent with this site was to gradually introduce tools and techniques to apply to quantitative finance with open source tools.  I&amp;rsquo;m still doing the introducing but dropping the gradual by going straight into applying neural networks to financial data.&lt;/p&gt;
+
+&lt;p&gt;Deep learning with neural networks is all the rage right now so I started messing with it a week ago. Rather than toil on my own I&amp;rsquo;m going to share my process of trying to get my head around neural networks and finding a model with tradeable signals.&lt;/p&gt;
+
+&lt;h1 id=&#34;prejudices&#34;&gt;Prejudices&lt;/h1&gt;
+
+&lt;p&gt;Before we start I&amp;rsquo;m going to go on record and say that neural networks probably won&amp;rsquo;t provide any tradeable signals. The reason behind my bias is that security prices are essentially random and it seems as if neural networks are getting the best results in the real world when they are applied to data with &amp;ldquo;hard edges&amp;rdquo;. Because seucrity prices are essentially randome there aren&amp;rsquo;t really any &amp;ldquo;hard edges&amp;rdquo; in finance so intuitively it seems that neural networks will generally meander. Having said this, I hope to be proven wrong.&lt;/p&gt;
+
+&lt;h1 id=&#34;lstm-xlf&#34;&gt;LSTM + XLF&lt;/h1&gt;
+
+&lt;p&gt;I&amp;rsquo;m going to try and set up a recurrent neural network on XLF price data. The XLF is an ETF that mirrors a basket of financial stocks. We could use the SP500 or an ETF that tracks the SP500 but I thought it would be easier to work an ETF with less components.&lt;/p&gt;
+
+&lt;p&gt;For our neural network, we&amp;rsquo;ll be using Long Short-Term Memory (&amp;ldquo;LSTM&amp;rdquo;). I approach machine learning models the same way I approach databases, I just want to learn to use them, I don&amp;rsquo;t care how they work. As a result, I&amp;rsquo;ll let &lt;a href=&#34;http://colah.github.io/posts/2015-08-Understanding-LSTMs/&#34;&gt;other&lt;/a&gt; &lt;a href=&#34;https://deeplearning4j.org/lstm&#34;&gt;sites&lt;/a&gt; walk you through the wonders of LSTM but for our purposes the important thing you need to know is that they not only allow you to train on features but also allows you to train on the time series of those features as well. This should come in handy when trying to predict our time series data.&lt;/p&gt;
+
+&lt;h1 id=&#34;the-toolbox&#34;&gt;The Toolbox&lt;/h1&gt;
+
+&lt;p&gt;I&amp;rsquo;m going to be using &lt;a href=&#34;https://keras.io/&#34;&gt;Keras&lt;/a&gt; with &lt;a href=&#34;https://www.tensorflow.org/&#34;&gt;Tensor Flow&lt;/a&gt; as the backend. Keras doesn&amp;rsquo;t support Tensor Flow 1.0 unless you install Keras 2.0 which is a real pain to install so we&amp;rsquo;ll use Keras with Tensor Flow 0.12.  You&amp;rsquo;ll need Python and Postgresql installed on your machine. In the github repo, you&amp;rsquo;ll find a &lt;code&gt;requirements.txt&lt;/code&gt; with the dependencies you need. If you don&amp;rsquo;t use it already, you should also load virtualenv to sandbox your Python environment.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>data management iii database</title>
+      <link>https://ventrisco.github.io/site/blog/data-management-iii-database/</link>
+      <pubDate>Wed, 22 Feb 2017 18:50:26 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/site/blog/data-management-iii-database/</guid>
+      <description>
+
+&lt;h3 id=&#34;copy-that&#34;&gt;COPY THAT&lt;/h3&gt;
+
+&lt;p&gt;The fastest way to get your data into Postgresql is to use the &lt;code&gt;COPY&lt;/code&gt; command. The &lt;code&gt;COPY&lt;/code&gt; command is like a batch insert but much faster and you should use every time you find yourself performed serial inserts.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code&gt;COPY&lt;/code&gt; command requires the number of columns in the data to match the number of columns in the table that you&amp;rsquo;re copying to. So, let&amp;rsquo;s create a table for a our data.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;CREATE TABLE yahoo_data (
+  ticker TEXT
+, dt DATE
+, open NUMERIC
+, high NUMERIC
+, low NUMERIC
+, close NUMERIC
+, volume NUMERIC
+, adj_close NUMERIC
+);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here we just create a table with column names that mirror the header in our csv file. Once you have this table set up, all you need to do is copy your data to the table with the following command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;COPY yahoo_data FROM &#39;/tmp/data.txt&#39; WITH DELIMITER &#39;,&#39; CSV HEADER;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here we use &lt;code&gt;COPY FROM&lt;/code&gt; with the &lt;code&gt;WITH DELIMITER &#39;,&#39;&lt;/code&gt; option that tells Postgresql that our data is comma delimited. The &lt;code&gt;CSV HEADER&lt;/code&gt; option tells Postgresql to ignore the header. You can ignore the header while writing the data to disk but I found that it&amp;rsquo;s easier to use the &lt;code&gt;CSV HEADER&lt;/code&gt; option instead.&lt;/p&gt;
+
+&lt;p&gt;That&amp;rsquo;s it! You know have stock data that you can query and analyze to your heart&amp;rsquo;s content. If you query your data you should have something that looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;historical_stock_data=# select * from yahoo_data limit 10;
+ ticker |     dt     |    open    |    high    |    low     |   close    |  volume  | adj_close  
+--------+------------+------------+------------+------------+------------+----------+------------
+ AAPL   | 2017-02-17 | 135.100006 | 135.830002 | 135.100006 | 135.720001 | 22084500 | 135.720001
+ AAPL   | 2017-02-16 | 135.669998 | 135.899994 | 134.839996 | 135.350006 | 22118000 | 135.350006
+ AAPL   | 2017-02-15 | 135.520004 | 136.270004 | 134.619995 | 135.509995 | 35501600 | 135.509995
+ AAPL   | 2017-02-14 | 133.470001 | 135.089996 |     133.25 | 135.020004 | 32815500 | 135.020004
+ AAPL   | 2017-02-13 | 133.080002 | 133.820007 |     132.75 | 133.289993 | 23035400 | 133.289993
+ AAPL   | 2017-02-10 | 132.460007 | 132.940002 | 132.050003 | 132.119995 | 20065500 | 132.119995
+ AAPL   | 2017-02-09 | 131.649994 | 132.449997 | 131.119995 | 132.419998 | 28349900 | 132.419998
+ AAPL   | 2017-02-08 | 131.350006 | 132.220001 | 131.220001 | 132.039993 | 23004100 | 131.469994
+ AAPL   | 2017-02-07 | 130.539993 | 132.089996 | 130.449997 | 131.529999 | 38183800 | 130.962201
+ AAPL   | 2017-02-06 | 129.130005 |     130.50 | 128.899994 | 130.289993 | 26845900 | 129.727549
+(10 rows)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;conclusion&#34;&gt;CONCLUSION&lt;/h3&gt;
+
+&lt;p&gt;Although getting data from different service providers will require you to write different adapters and probably in a different programming language, the basic premise will always be the same: fetch, parse, upload. You could just download a slug of data every time you need it but I found that maintaining the price data in a database makes it easier to deal with when backtesting and it facilitates working with larger data sets.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>data management ii parsing</title>
+      <link>https://ventrisco.github.io/site/blog/data-management-ii-parsing/</link>
+      <pubDate>Wed, 22 Feb 2017 18:50:16 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/site/blog/data-management-ii-parsing/</guid>
+      <description>
+
+&lt;h3 id=&#34;data-structure&#34;&gt;Data Structure&lt;/h3&gt;
+
+&lt;p&gt;We&amp;rsquo;ve got our data, now what do we do with it? Rather than insert each line into the database separately we&amp;rsquo;re going use Postgresql&amp;rsquo;s &lt;code&gt;copy from&lt;/code&gt; function to perform a bulk insert. Before we do that we have to write the data to file.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s take a look at our data and think about how we want to parse the data and set up our table.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Date,Open,High,Low,Close,Volume,Adj Close
+2017-02-13,133.080002,133.820007,132.75,133.289993,22926400,133.289993
+2017-02-10,132.460007,132.940002,132.050003,132.119995,20065500,132.119995
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It&amp;rsquo;s obvious that we&amp;rsquo;ll need a table with the columns &lt;code&gt;date, open, high, low, close, volume, and adj_close&lt;/code&gt;. But what about our ticker symbol. One way to attack the problem is to create a table for each ticker symbol. Although this will work, if we have more than a couple ticker symbols, managing all those tables would be a mess and you would probably have to keep track of your data in the  application layer.&lt;/p&gt;
+
+&lt;p&gt;For sanity&amp;rsquo;s sake, we&amp;rsquo;re going to use a single table for our historical data with all of the columns mentioned above and another column labeled &lt;code&gt;ticker&lt;/code&gt;. This requires us to split the data on each line and add the ticker symbol at the beginning of each line before we write it to disk. In our example, a written line should look like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;AAPL, 2017-02-13,133.080002,133.820007,132.75,133.289993,22926400,133.289993
+AAPL, 2017-02-10,132.460007,132.940002,132.050003,132.119995,20065500,132.119995
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now that we know what we&amp;rsquo;re trying to do let&amp;rsquo;s take a look at some code.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# initialize data.txt
+f = open(&#39;/tmp/data.txt&#39;, &#39;w&#39;)
+f.close()
+
+# Parse and write data
+for d in data:
+    Date, Open, High, Low, Close, Volume, Adj_Close = d.split(&#39;,&#39;)
+    data_string = &#39;%s,%s,%s,%s,%s,%s,%s,%s&#39; % (TICKER, Date, Open, High, Low, Close, Volume, Adj_Close)
+    f = open(&#39;/tmp/data.txt&#39;, &#39;a&#39;)
+    f.write(data_string)
+    f.close()
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;First we initialize &lt;code&gt;/tmp/data.txt&lt;/code&gt; so that we have an empty file we can append. If you don&amp;rsquo;t do this, you might have data left over from the last time you ran this script.&lt;/p&gt;
+
+&lt;p&gt;For every line &lt;code&gt;d&lt;/code&gt; in &lt;code&gt;data&lt;/code&gt;, we split the line on the commas so that each field gets mapped to their corresponding variable. Next, &lt;code&gt;data_string&lt;/code&gt; represents a new line with the ticker symbol prepended to it. This new line then gets written to &lt;code&gt;/tmp/data.txt&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Now that we have our data written to disk let&amp;rsquo;s copy it to our Postgresql cluster.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>data management i fetching</title>
+      <link>https://ventrisco.github.io/site/blog/data-management-i-fetching/</link>
+      <pubDate>Wed, 22 Feb 2017 18:50:07 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/site/blog/data-management-i-fetching/</guid>
+      <description>
+
+&lt;h2 id=&#34;fetching-data&#34;&gt;Fetching Data&lt;/h2&gt;
+
+&lt;p&gt;Yahoo finance has always been a great resource for free financial information. It was really the one and only option until Google finance came along and unlike other parts of Yahoo, management didn&amp;rsquo;t screw up Yahoo Finance as much as the rest of the site.&lt;/p&gt;
+
+&lt;p&gt;Yahoo finance has always made their historical financial data available for download in csv format and it&amp;rsquo;s a breeze to download.&lt;/p&gt;
+
+&lt;p&gt;In Python, here&amp;rsquo;s how you fetch data from Yahoo Finance for a stock like Apple (ticker: AAPL).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;import urllib
+
+base_url = &amp;quot;http://ichart.finance.yahoo.com/table.csv?s=%s&amp;quot;
+response = urllib.urlopen(base_url % &#39;AAPL&#39;)
+data = response.readlines()
+print data
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;That&amp;rsquo;s it! If you run this in the Jupyter Notebook, you should see something like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;[&#39;Date,Open,High,Low,Close,Volume,Adj Close\n&#39;,
+&#39;2017-02-17,135.100006,135.830002,135.100006,135.720001,22084500,135.720001\n&#39;,
+&#39;2017-02-16,135.669998,135.899994,134.839996,135.350006,22118000,135.350006\n&#39;,
+&#39;2017-02-15,135.520004,136.270004,134.619995,135.509995,35501600,135.509995\n&#39;,
+&#39;2017-02-14,133.470001,135.089996,133.25,135.020004,32815500,135.020004\n&#39;,
+&#39;2017-02-13,133.080002,133.820007,132.75,133.289993,23035400,133.289993\n&#39;,
+&#39;2017-02-10,132.460007,132.940002,132.050003,132.119995,20065500,132.119995\n&#39;,
+&#39;2017-02-09,131.649994,132.449997,131.119995,132.419998,2834990
+...
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;urllib&lt;/code&gt; allows you to open arbitrary network resources. Here we build a url by using the Yahoo Finance url, pass in a ticker symbol and user &lt;code&gt;urllib.urlopen&lt;/code&gt; to download the &lt;code&gt;csv&lt;/code&gt; historical price data for Apple. We use &lt;code&gt;readlines&lt;/code&gt;, which give us a list of &amp;ldquo;lines&amp;rdquo; that we can parse through.&lt;/p&gt;
+
+&lt;h2 id=&#34;ohlc&#34;&gt;OHLC&lt;/h2&gt;
+
+&lt;p&gt;I&amp;rsquo;ll go through this quickly for those who are new to financial data. This comma delimited file is split into columns with headers Date, Open, High, Low, Close, Volume, Adj Close. This data structure is commonly referred to as OHLC, which is short for open, high, low, close. Here&amp;rsquo;s a quick summary of each column.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Date:&lt;/strong&gt; The date of the financial data in the corresponding row&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Open:&lt;/strong&gt; This is the first price at which the security was traded at 9:30AM Eastern Standard Time.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;High:&lt;/strong&gt; This is the highest price that the security traded at during the trading day.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Low:&lt;/strong&gt; This is the lowest price that the security traded at during the trading day.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Volume:&lt;/strong&gt; This is the total amount of shares that exchanged hands on the date.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Adj Close:&lt;/strong&gt; If there is an adjustment in reconciling the last trade, it would show up here. This doesn&amp;rsquo;t happen as much as it used it.&lt;/p&gt;
+
+&lt;p&gt;This data structure is pervasive in financial data so get comfortable with it. Let&amp;rsquo;s move on to parsing!&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>data management intro</title>
+      <link>https://ventrisco.github.io/site/blog/data-management-intro/</link>
+      <pubDate>Wed, 22 Feb 2017 18:49:36 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/site/blog/data-management-intro/</guid>
+      <description>&lt;p&gt;It should come as no surprise that data management is an integral part of analyzing financial data. Not only do you have to manage raw data such as daily stock quotes, you also have to deal with data inflation from extracting features from the data.&lt;/p&gt;
+
+&lt;p&gt;However, unlike other machine learning endeavors, we have the luxury of working with structured data sets that have been vetted by third parties.&lt;/p&gt;
+
+&lt;p&gt;The basic pattern for managing data goes like this:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Fetch data&lt;/li&gt;
+&lt;li&gt;Parse Data&lt;/li&gt;
+&lt;li&gt;Load Data&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;For this simple example we&amp;rsquo;ll fetch End of Day (&amp;ldquo;EOD&amp;rdquo;) data from Yahoo Finance, parse it and load it into our database. We&amp;rsquo;ll be using Python as our programming language and Postgresql as our database so make sure you have those installed. Let&amp;rsquo;s start fetching some data!&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

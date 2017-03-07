@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>data management i fetching &middot; </title>
+        <meta name="description" content="Fetching Data Yahoo finance has always been a great resource for free financial information. It was really the one and only option until Google finance came along and unlike other parts of Yahoo, management didn&rsquo;t screw up Yahoo Finance as much as the rest of the site.
+Yahoo finance has always made their historical financial data available for download in csv format and it&rsquo;s a breeze to download.
+In Python, here&rsquo;s how you fetch data from Yahoo Finance for a stock like Apple (ticker: AAPL).">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.18.1" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://ventrisco.github.io/site/dist/styles.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+    </head>
+    <body>
+        
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Ventris &amp; Co" href="https://ventrisco.github.io/site/">Ventris &amp; Co</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://ventrisco.github.io/site/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Github" title="Github" href="https://github.com/ventrisco">
+                                <i class="fa fa-github-alt"></i>
+                            </a>
+                        
+                        
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Email" title="Email" href="mailto:m@ventris.co">
+                                <i class="fa fa-envelope"></i>
+                            </a>
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">data management i fetching</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2017-02-22" itemprop="datePublished">Wed, Feb 22, 2017</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="https://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author"></a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    
+
+<h2 id="fetching-data">Fetching Data</h2>
+
+<p>Yahoo finance has always been a great resource for free financial information. It was really the one and only option until Google finance came along and unlike other parts of Yahoo, management didn&rsquo;t screw up Yahoo Finance as much as the rest of the site.</p>
+
+<p>Yahoo finance has always made their historical financial data available for download in csv format and it&rsquo;s a breeze to download.</p>
+
+<p>In Python, here&rsquo;s how you fetch data from Yahoo Finance for a stock like Apple (ticker: AAPL).</p>
+
+<pre><code>import urllib
+
+base_url = &quot;http://ichart.finance.yahoo.com/table.csv?s=%s&quot;
+response = urllib.urlopen(base_url % 'AAPL')
+data = response.readlines()
+print data
+</code></pre>
+
+<p>That&rsquo;s it! If you run this in the Jupyter Notebook, you should see something like this:</p>
+
+<pre><code>['Date,Open,High,Low,Close,Volume,Adj Close\n',
+'2017-02-17,135.100006,135.830002,135.100006,135.720001,22084500,135.720001\n',
+'2017-02-16,135.669998,135.899994,134.839996,135.350006,22118000,135.350006\n',
+'2017-02-15,135.520004,136.270004,134.619995,135.509995,35501600,135.509995\n',
+'2017-02-14,133.470001,135.089996,133.25,135.020004,32815500,135.020004\n',
+'2017-02-13,133.080002,133.820007,132.75,133.289993,23035400,133.289993\n',
+'2017-02-10,132.460007,132.940002,132.050003,132.119995,20065500,132.119995\n',
+'2017-02-09,131.649994,132.449997,131.119995,132.419998,2834990
+...
+</code></pre>
+
+<p><code>urllib</code> allows you to open arbitrary network resources. Here we build a url by using the Yahoo Finance url, pass in a ticker symbol and user <code>urllib.urlopen</code> to download the <code>csv</code> historical price data for Apple. We use <code>readlines</code>, which give us a list of &ldquo;lines&rdquo; that we can parse through.</p>
+
+<h2 id="ohlc">OHLC</h2>
+
+<p>I&rsquo;ll go through this quickly for those who are new to financial data. This comma delimited file is split into columns with headers Date, Open, High, Low, Close, Volume, Adj Close. This data structure is commonly referred to as OHLC, which is short for open, high, low, close. Here&rsquo;s a quick summary of each column.</p>
+
+<p><strong>Date:</strong> The date of the financial data in the corresponding row</p>
+
+<p><strong>Open:</strong> This is the first price at which the security was traded at 9:30AM Eastern Standard Time.</p>
+
+<p><strong>High:</strong> This is the highest price that the security traded at during the trading day.</p>
+
+<p><strong>Low:</strong> This is the lowest price that the security traded at during the trading day.</p>
+
+<p><strong>Volume:</strong> This is the total amount of shares that exchanged hands on the date.</p>
+
+<p><strong>Adj Close:</strong> If there is an adjustment in reconciling the last trade, it would show up here. This doesn&rsquo;t happen as much as it used it.</p>
+
+<p>This data structure is pervasive in financial data so get comfortable with it. Let&rsquo;s move on to parsing!</p>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+
+    <div class="share">
+        
+            <a class="icon-twitter" href="https://twitter.com/share?text=data%20management%20i%20fetching&url=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2fdata-management-i-fetching%2f"
+                onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                <i class="fa fa-twitter"></i>
+                <span class="hidden">Twitter</span>
+            </a>
+        
+
+        
+            <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2fdata-management-i-fetching%2f"
+                onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                <i class="fa fa-facebook"></i>
+                <span class="hidden">Facebook</span>
+            </a>
+        
+
+        
+            <a class="icon-google-plus" href="https://plus.google.com/share?url=https%3a%2f%2fventrisco.github.io%2fsite%2fblog%2fdata-management-i-fetching%2f"
+              onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+              <i class="fa fa-google-plus"></i>
+                <span class="hidden">Google+</span>
+            </a>
+        
+        
+    </div>
+</footer>
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'ventrisco';
+    var disqus_identifier = 'https:\/\/ventrisco.github.io\/site\/blog\/data-management-i-fetching\/';
+    var disqus_title = 'data management i fetching';
+    var disqus_url = 'https:\/\/ventrisco.github.io\/site\/blog\/data-management-i-fetching\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Ventris &amp; Co" href="https://ventrisco.github.io/site/">Ventris &amp; Co</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+
+                <p class="footer-copyright">
+                    <span>&copy; 2017 / Powered by <a href="https://gohugo.io/">Hugo</a></span>
+                </p>
+                <p class="footer-copyright">
+                    <span><a href="https://github.com/roryg/ghostwriter">Ghostwriter theme</a> By <a href="http://jollygoodthemes.com">JollyGoodThemes</a></span>
+                    <span>/ <a href="https://github.com/jbub/ghostwriter">Ported</a> to Hugo By <a href="https://github.com/jbub">jbub</a></span>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://ventrisco.github.io/site/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+        <script src="https://ventrisco.github.io/site/js/jquery.fitvids.js"></script>
+        <script src="https://ventrisco.github.io/site/js/scripts.js"></script>
+    </body>
+</html>
+
