@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Blogs on Ventris &amp; Co</title>
-    <link>https://ventrisco.github.io/site/blog/index.xml</link>
+    <link>https://ventrisco.github.io/blog/index.xml</link>
     <description>Recent content in Blogs on Ventris &amp; Co</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 06 Mar 2017 21:27:23 -0800</lastBuildDate>
-    <atom:link href="https://ventrisco.github.io/site/blog/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://ventrisco.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>LSTM Madness/01/Data Prep</title>
-      <link>https://ventrisco.github.io/site/blog/lstm_madness_01/</link>
+      <link>https://ventrisco.github.io/blog/lstm_madness_01/</link>
       <pubDate>Mon, 06 Mar 2017 21:27:23 -0800</pubDate>
       
-      <guid>https://ventrisco.github.io/site/blog/lstm_madness_01/</guid>
+      <guid>https://ventrisco.github.io/blog/lstm_madness_01/</guid>
       <description>
 
 &lt;h1 id=&#34;yahoo&#34;&gt;Yahoo!&lt;/h1&gt;
@@ -138,10 +138,10 @@ FROM xlf_etf_data;
     
     <item>
       <title>LSTM Madness/00/Intro</title>
-      <link>https://ventrisco.github.io/site/blog/lstm_madness_intro/</link>
+      <link>https://ventrisco.github.io/blog/lstm_madness_intro/</link>
       <pubDate>Mon, 06 Mar 2017 10:06:01 -0800</pubDate>
       
-      <guid>https://ventrisco.github.io/site/blog/lstm_madness_intro/</guid>
+      <guid>https://ventrisco.github.io/blog/lstm_madness_intro/</guid>
       <description>
 
 &lt;h1 id=&#34;jumping-right-in&#34;&gt;Jumping right in&lt;/h1&gt;
@@ -168,10 +168,10 @@ FROM xlf_etf_data;
     
     <item>
       <title>data management iii database</title>
-      <link>https://ventrisco.github.io/site/blog/data-management-iii-database/</link>
+      <link>https://ventrisco.github.io/blog/data-management-iii-database/</link>
       <pubDate>Wed, 22 Feb 2017 18:50:26 -0800</pubDate>
       
-      <guid>https://ventrisco.github.io/site/blog/data-management-iii-database/</guid>
+      <guid>https://ventrisco.github.io/blog/data-management-iii-database/</guid>
       <description>
 
 &lt;h3 id=&#34;copy-that&#34;&gt;COPY THAT&lt;/h3&gt;
@@ -225,10 +225,10 @@ FROM xlf_etf_data;
     
     <item>
       <title>data management ii parsing</title>
-      <link>https://ventrisco.github.io/site/blog/data-management-ii-parsing/</link>
+      <link>https://ventrisco.github.io/blog/data-management-ii-parsing/</link>
       <pubDate>Wed, 22 Feb 2017 18:50:16 -0800</pubDate>
       
-      <guid>https://ventrisco.github.io/site/blog/data-management-ii-parsing/</guid>
+      <guid>https://ventrisco.github.io/blog/data-management-ii-parsing/</guid>
       <description>
 
 &lt;h3 id=&#34;data-structure&#34;&gt;Data Structure&lt;/h3&gt;
@@ -275,10 +275,10 @@ for d in data:
     
     <item>
       <title>data management i fetching</title>
-      <link>https://ventrisco.github.io/site/blog/data-management-i-fetching/</link>
+      <link>https://ventrisco.github.io/blog/data-management-i-fetching/</link>
       <pubDate>Wed, 22 Feb 2017 18:50:07 -0800</pubDate>
       
-      <guid>https://ventrisco.github.io/site/blog/data-management-i-fetching/</guid>
+      <guid>https://ventrisco.github.io/blog/data-management-i-fetching/</guid>
       <description>
 
 &lt;h2 id=&#34;fetching-data&#34;&gt;Fetching Data&lt;/h2&gt;
@@ -334,10 +334,10 @@ print data
     
     <item>
       <title>data management intro</title>
-      <link>https://ventrisco.github.io/site/blog/data-management-intro/</link>
+      <link>https://ventrisco.github.io/blog/data-management-intro/</link>
       <pubDate>Wed, 22 Feb 2017 18:49:36 -0800</pubDate>
       
-      <guid>https://ventrisco.github.io/site/blog/data-management-intro/</guid>
+      <guid>https://ventrisco.github.io/blog/data-management-intro/</guid>
       <description>&lt;p&gt;It should come as no surprise that data management is an integral part of analyzing financial data. Not only do you have to manage raw data such as daily stock quotes, you also have to deal with data inflation from extracting features from the data.&lt;/p&gt;
 
 &lt;p&gt;However, unlike other machine learning endeavors, we have the luxury of working with structured data sets that have been vetted by third parties.&lt;/p&gt;
