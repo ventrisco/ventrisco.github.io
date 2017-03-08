@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>LSTM MADNESS/03/Our first model &middot; M. Ventris</title>
+        <meta name="description" content="Recap Let&rsquo;s look at where we&rsquo;re at relative to the tasks we outlined to complete our first model:
+ Get today&rsquo;s returns for our x values. Get the next returns for our y values. Shape the data for Keras Setup, compile and fit the model. Make predictions on our existing data. Plot the predicted returns to the actual returns.  In this post, we&rsquo;ll cover 4 through 6 and have our first model.">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.18.1" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://ventrisco.github.io/dist/styles.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+    </head>
+    <body>
+        
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-93157727-1', 'auto');
+ga('send', 'pageview');
+</script>
+
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Ventris &amp; Co" href="https://ventrisco.github.io/">Ventris &amp; Co</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://ventrisco.github.io/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Github" title="Github" href="https://github.com/ventrisco">
+                                <i class="fa fa-github-alt"></i>
+                            </a>
+                        
+                        
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Email" title="Email" href="mailto:m@ventris.co">
+                                <i class="fa fa-envelope"></i>
+                            </a>
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">LSTM MADNESS/03/Our first model</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2017-03-07" itemprop="datePublished">Tue, Mar 7, 2017</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="https://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author">M. Ventris</a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    
+
+<h1 id="recap">Recap</h1>
+
+<p>Let&rsquo;s look at where we&rsquo;re at relative to the tasks we outlined to complete our first model:</p>
+
+<ol>
+<li><del>Get today&rsquo;s returns for our x values.</del></li>
+<li><del>Get the next returns for our y values.</del></li>
+<li><del>Shape the data for Keras</del></li>
+<li>Setup, compile and fit the model.</li>
+<li>Make predictions on our existing data.</li>
+<li>Plot the predicted returns to the actual returns.</li>
+</ol>
+
+<p>In this post, we&rsquo;ll cover 4 through 6 and have our first model.</p>
+
+<h1 id="model-time">Model time</h1>
+
+<p>Let&rsquo;s build our model.</p>
+
+<pre><code>number_of_features = train_x.shape[2]
+
+model = Sequential()
+model.add(LSTM(1, input_dim=number_of_features))
+model.add(Dense(1))
+model.compile(loss='mean_squared_error', optimizer='adam')
+model.fit(train_x, train_y, nb_epoch=100, batch_size=1, verbose=2)
+</code></pre>
+
+<p>A neural network requires at least three layers. You always need an input layer and an output layer. The layers in between are the hidden layers where the neurons do their work. Read through <a href="http://stats.stackexchange.com/questions/181/how-to-choose-the-number-of-hidden-layers-and-nodes-in-a-feedforward-neural-netw">this</a> answer on Stack Overflow for a great walkthrough of the layers.</p>
+
+<p>In our example, as far I can tell, after we instantiate our model with <code>model = Sequential()</code> we&rsquo;re adding the input layer and a hidden layer by calling <code>model.add(LSTM(1, input_dim=number_of_features))</code>. The first parameter in <code>LSTM</code> is the number of neurons for that layer while <code>input_dim</code> tells the model how many features we have. Our output layer is called by the <code>Dense</code> function which has a output of 1 dimension.</p>
+
+<p>After our model is set up, we run <code>fit</code>, with our X values and Y values. <code>nb_epoch</code> is the number of times we we pass over the the data while <code>batch_size</code> is the number of samples (X values) the model uses at one time. For the sake of argument, let&rsquo;s say we have 2,000 X values. Using a <code>batch_size</code> of 1 means the model will iterate over the X values 2,000 times for each epoch. If our <code>batch_size</code> was 200, it would only iterate over the X values 10 times for each epoch.</p>
+
+<p>All of these parameters are referred to as hyperparameters in neural network speak. In machine learning, when you see hyper-anything means it&rsquo;s going to be like looking at the McDonald&rsquo;s menu after the they started serving breakfast all day. More parameters are great but they add the potential for cognitive overload which may ultimately lead to overfitting your data and a bad headache.</p>
+
+<h1 id="the-fit-bit">The Fit Bit</h1>
+
+<pre><code># make predictions
+train_predict = model.predict(train_x)
+test_predict = model.predict(test_x)
+
+# Add prediction to y_df_dataframe
+y_df_train = y_df[0:train_x.shape[0]]
+y_df_train[&quot;prediction&quot;] = train_predict
+y_df_train.to_sql('lstm_madness_xlf_train_01', engine) 
+</code></pre>
+
+<p>Here we take the trained model and predict Y values with our training data. We then take those results, line them up with the our actual Y values and save that dataframe as a table in our database. We&rsquo;ll use these tables to see how well our trained models can predict the values it was trained with.</p>
+
+<h1 id="plots">Plots</h1>
+
+<p>For each iteration, I&rsquo;m going to generate two initial plots.</p>
+
+<ol>
+<li>A scatter plot comparing the predicted return to the actual return.</li>
+<li>A line plot comparing the cumulative actual returns and the cumulative predicted returns.</li>
+</ol>
+
+<p>My preference is to iterate quickly so I usually take a quick look at these two plots and just jump into another iteration. I&rsquo;ll only start running other reports and plotting those as well if something interesting comes up.</p>
+
+<p>Let&rsquo;s take a look at what we got.</p>
+
+<p><img src="https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/scatter.png" alt="Scatterplot" /></p>
+
+<p>In an ideal world, what you want to see in this scatterplot is a linear line that goes from the lower left quadrant to the upper right quadrant. This would mean that our trained model perfectly predicted the actual return. We don&rsquo;t live in an ideal world and this scatter plot shows that our model doesn&rsquo;t make very good predictions. It looks like the majority of its predictions are negative.</p>
+
+<p>Let&rsquo;s take a look at our cumulative return plot.</p>
+
+<p><img src="https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/cum_ret.png" alt="Cumulative Returns" /></p>
+
+<p>Yup, the majority of those predictions are negative. The red line represents the sum of the XLF returns that results in a chart that looks like the actual price chart for the XLF. The financial markets have had some rough spots over the past 18 years and the XLF&rsquo;s actual cumulative returns reflects that. Our predictions on the other hand are consistently negative and looks more like a random negative drift than a series of hard predictions. The spike of activity in the 2009 may be related to better &ldquo;edges&rdquo; that the model was able to detect due to increased volatility during that year.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>Our first model was a bust. The predictions of our trained model against the trained data is so lame, it doesn&rsquo;t make any sense to use our trained model on out of sample data. The trained model, however, shows that increased volatility results in more prediction activity. We&rsquo;ll explore how we can use this in our next iteration.</p>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+
+    <div class="share">
+        
+            <a class="icon-twitter" href="https://twitter.com/share?text=LSTM%20MADNESS%2f03%2fOur%20first%20model&url=https%3a%2f%2fventrisco.github.io%2fblog%2flstm_madness_03%2f"
+                onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                <i class="fa fa-twitter"></i>
+                <span class="hidden">Twitter</span>
+            </a>
+        
+
+        
+            <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3a%2f%2fventrisco.github.io%2fblog%2flstm_madness_03%2f"
+                onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                <i class="fa fa-facebook"></i>
+                <span class="hidden">Facebook</span>
+            </a>
+        
+
+        
+            <a class="icon-google-plus" href="https://plus.google.com/share?url=https%3a%2f%2fventrisco.github.io%2fblog%2flstm_madness_03%2f"
+              onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+              <i class="fa fa-google-plus"></i>
+                <span class="hidden">Google+</span>
+            </a>
+        
+        
+    </div>
+</footer>
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'ventrisco';
+    var disqus_identifier = 'https:\/\/ventrisco.github.io\/blog\/lstm_madness_03\/';
+    var disqus_title = 'LSTM MADNESS\/03\/Our first model';
+    var disqus_url = 'https:\/\/ventrisco.github.io\/blog\/lstm_madness_03\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Ventris &amp; Co" href="https://ventrisco.github.io/">Ventris &amp; Co</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+
+                <p class="footer-copyright">
+                    <span>&copy; 2017 / Powered by <a href="https://gohugo.io/">Hugo</a></span>
+                </p>
+                <p class="footer-copyright">
+                    <span><a href="https://github.com/roryg/ghostwriter">Ghostwriter theme</a> By <a href="http://jollygoodthemes.com">JollyGoodThemes</a></span>
+                    <span>/ <a href="https://github.com/jbub/ghostwriter">Ported</a> to Hugo By <a href="https://github.com/jbub">jbub</a></span>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://ventrisco.github.io/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+        <script src="https://ventrisco.github.io/js/jquery.fitvids.js"></script>
+        <script src="https://ventrisco.github.io/js/scripts.js"></script>
+    </body>
+</html>
+

@@ -6,8 +6,95 @@
     <description>Recent content in Blogs on Ventris &amp; Co</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 07 Mar 2017 13:33:49 -0800</lastBuildDate>
+    <lastBuildDate>Tue, 07 Mar 2017 21:58:50 -0800</lastBuildDate>
     <atom:link href="https://ventrisco.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>LSTM MADNESS/03/Our first model</title>
+      <link>https://ventrisco.github.io/blog/lstm_madness_03/</link>
+      <pubDate>Tue, 07 Mar 2017 21:58:50 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/blog/lstm_madness_03/</guid>
+      <description>
+
+&lt;h1 id=&#34;recap&#34;&gt;Recap&lt;/h1&gt;
+
+&lt;p&gt;Let&amp;rsquo;s look at where we&amp;rsquo;re at relative to the tasks we outlined to complete our first model:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;del&gt;Get today&amp;rsquo;s returns for our x values.&lt;/del&gt;&lt;/li&gt;
+&lt;li&gt;&lt;del&gt;Get the next returns for our y values.&lt;/del&gt;&lt;/li&gt;
+&lt;li&gt;&lt;del&gt;Shape the data for Keras&lt;/del&gt;&lt;/li&gt;
+&lt;li&gt;Setup, compile and fit the model.&lt;/li&gt;
+&lt;li&gt;Make predictions on our existing data.&lt;/li&gt;
+&lt;li&gt;Plot the predicted returns to the actual returns.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;In this post, we&amp;rsquo;ll cover 4 through 6 and have our first model.&lt;/p&gt;
+
+&lt;h1 id=&#34;model-time&#34;&gt;Model time&lt;/h1&gt;
+
+&lt;p&gt;Let&amp;rsquo;s build our model.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;number_of_features = train_x.shape[2]
+
+model = Sequential()
+model.add(LSTM(1, input_dim=number_of_features))
+model.add(Dense(1))
+model.compile(loss=&#39;mean_squared_error&#39;, optimizer=&#39;adam&#39;)
+model.fit(train_x, train_y, nb_epoch=100, batch_size=1, verbose=2)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;A neural network requires at least three layers. You always need an input layer and an output layer. The layers in between are the hidden layers where the neurons do their work. Read through &lt;a href=&#34;http://stats.stackexchange.com/questions/181/how-to-choose-the-number-of-hidden-layers-and-nodes-in-a-feedforward-neural-netw&#34;&gt;this&lt;/a&gt; answer on Stack Overflow for a great walkthrough of the layers.&lt;/p&gt;
+
+&lt;p&gt;In our example, as far I can tell, after we instantiate our model with &lt;code&gt;model = Sequential()&lt;/code&gt; we&amp;rsquo;re adding the input layer and a hidden layer by calling &lt;code&gt;model.add(LSTM(1, input_dim=number_of_features))&lt;/code&gt;. The first parameter in &lt;code&gt;LSTM&lt;/code&gt; is the number of neurons for that layer while &lt;code&gt;input_dim&lt;/code&gt; tells the model how many features we have. Our output layer is called by the &lt;code&gt;Dense&lt;/code&gt; function which has a output of 1 dimension.&lt;/p&gt;
+
+&lt;p&gt;After our model is set up, we run &lt;code&gt;fit&lt;/code&gt;, with our X values and Y values. &lt;code&gt;nb_epoch&lt;/code&gt; is the number of times we we pass over the the data while &lt;code&gt;batch_size&lt;/code&gt; is the number of samples (X values) the model uses at one time. For the sake of argument, let&amp;rsquo;s say we have 2,000 X values. Using a &lt;code&gt;batch_size&lt;/code&gt; of 1 means the model will iterate over the X values 2,000 times for each epoch. If our &lt;code&gt;batch_size&lt;/code&gt; was 200, it would only iterate over the X values 10 times for each epoch.&lt;/p&gt;
+
+&lt;p&gt;All of these parameters are referred to as hyperparameters in neural network speak. In machine learning, when you see hyper-anything means it&amp;rsquo;s going to be like looking at the McDonald&amp;rsquo;s menu after the they started serving breakfast all day. More parameters are great but they add the potential for cognitive overload which may ultimately lead to overfitting your data and a bad headache.&lt;/p&gt;
+
+&lt;h1 id=&#34;the-fit-bit&#34;&gt;The Fit Bit&lt;/h1&gt;
+
+&lt;pre&gt;&lt;code&gt;# make predictions
+train_predict = model.predict(train_x)
+test_predict = model.predict(test_x)
+
+# Add prediction to y_df_dataframe
+y_df_train = y_df[0:train_x.shape[0]]
+y_df_train[&amp;quot;prediction&amp;quot;] = train_predict
+y_df_train.to_sql(&#39;lstm_madness_xlf_train_01&#39;, engine) 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here we take the trained model and predict Y values with our training data. We then take those results, line them up with the our actual Y values and save that dataframe as a table in our database. We&amp;rsquo;ll use these tables to see how well our trained models can predict the values it was trained with.&lt;/p&gt;
+
+&lt;h1 id=&#34;plots&#34;&gt;Plots&lt;/h1&gt;
+
+&lt;p&gt;For each iteration, I&amp;rsquo;m going to generate two initial plots.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;A scatter plot comparing the predicted return to the actual return.&lt;/li&gt;
+&lt;li&gt;A line plot comparing the cumulative actual returns and the cumulative predicted returns.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;My preference is to iterate quickly so I usually take a quick look at these two plots and just jump into another iteration. I&amp;rsquo;ll only start running other reports and plotting those as well if something interesting comes up.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s take a look at what we got.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/scatter.png&#34; alt=&#34;Scatterplot&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In an ideal world, what you want to see in this scatterplot is a linear line that goes from the lower left quadrant to the upper right quadrant. This would mean that our trained model perfectly predicted the actual return. We don&amp;rsquo;t live in an ideal world and this scatter plot shows that our model doesn&amp;rsquo;t make very good predictions. It looks like the majority of its predictions are negative.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s take a look at our cumulative return plot.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/cum_ret.png&#34; alt=&#34;Cumulative Returns&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Yup, the majority of those predictions are negative. The red line represents the sum of the XLF returns that results in a chart that looks like the actual price chart for the XLF. The financial markets have had some rough spots over the past 18 years and the XLF&amp;rsquo;s actual cumulative returns reflects that. Our predictions on the other hand are consistently negative and looks more like a random negative drift than a series of hard predictions. The spike of activity in the 2009 may be related to better &amp;ldquo;edges&amp;rdquo; that the model was able to detect due to increased volatility during that year.&lt;/p&gt;
+
+&lt;h1 id=&#34;conclusion&#34;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;Our first model was a bust. The predictions of our trained model against the trained data is so lame, it doesn&amp;rsquo;t make any sense to use our trained model on out of sample data. The trained model, however, shows that increased volatility results in more prediction activity. We&amp;rsquo;ll explore how we can use this in our next iteration.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>LSTM Madness/02/Data Shaping</title>
