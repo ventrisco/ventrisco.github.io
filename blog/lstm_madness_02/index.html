@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>LSTM Madness/02/Data Shaping &middot; M. Ventris</title>
+        <meta name="description" content="Tomorrow never knows For our first neural network, we&rsquo;ll try to answer the most obvious question:
+ Can today&rsquo;s return predict tomorrow&rsquo;s return?
+ Let&rsquo;s break this down to actionable tasks:
+ We&rsquo;ll need to get today&rsquo;s returns for our x values. We&rsquo;ll need to get the next returns for our y values. We&rsquo;ll need to shape the data for Keras We&rsquo;ll need to setup, compile and fit the model.">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="MobileOptimized" content="320">
+        <meta name="generator" content="Hugo 0.18.1" />
+        <meta name="robots" content="index,follow">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <link rel="stylesheet" href="https://ventrisco.github.io/dist/styles.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,400,600,700,300&subset=latin,cyrillic-ext,latin-ext,cyrillic">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        
+    </head>
+    <body>
+        
+
+        <div id="wrapper">
+            <header class="site-header">
+                <div class="container">
+                    <div class="site-title-wrapper">
+                        
+                            <h1 class="site-title">
+                                <a title="Ventris &amp; Co" href="https://ventrisco.github.io/">Ventris &amp; Co</a>
+                            </h1>
+                        
+                        <a class="button-square" href="https://ventrisco.github.io/index.xml"><i class="fa fa-rss"></i></a>
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Github" title="Github" href="https://github.com/ventrisco">
+                                <i class="fa fa-github-alt"></i>
+                            </a>
+                        
+                        
+                        
+                        
+                        
+                            <a class="button-square button-social hint--top" data-hint="Email" title="Email" href="mailto:m@ventris.co">
+                                <i class="fa fa-envelope"></i>
+                            </a>
+                        
+                    </div>
+
+                    <ul class="site-nav">
+                        
+                    </ul>
+                </div>
+            </header>
+
+            <div id="container">
+
+
+<div class="container">
+    <article class="post-container" itemscope="" itemtype="http://schema.org/BlogPosting">
+        <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">LSTM Madness/02/Data Shaping</h1>
+    
+    <p class="post-date">
+        <span>Published <time datetime="2017-03-07" itemprop="datePublished">Tue, Mar 7, 2017</time></span>
+        <span>by</span>
+        <span itemscope="" itemprop="author" itemtype="https://schema.org/Person">
+            <span itemprop="name">
+                <a href="" itemprop="url" rel="author">M. Ventris</a>
+            </span>
+        </span>
+    </p>
+</header>
+
+        <div class="post-content clearfix" itemprop="articleBody">
+    
+
+    
+
+<h1 id="tomorrow-never-knows">Tomorrow never knows</h1>
+
+<p>For our first neural network, we&rsquo;ll try to answer the most obvious question:</p>
+
+<blockquote>
+<p>Can today&rsquo;s return predict tomorrow&rsquo;s return?</p>
+</blockquote>
+
+<p>Let&rsquo;s break this down to actionable tasks:</p>
+
+<ol>
+<li>We&rsquo;ll need to get today&rsquo;s returns for our x values.</li>
+<li>We&rsquo;ll need to get the next returns for our y values.</li>
+<li>We&rsquo;ll need to shape the data for Keras</li>
+<li>We&rsquo;ll need to setup, compile and fit the model.</li>
+<li>We can then use the model to make predictions on our existing data.</li>
+<li>We&rsquo;ll plot the predicted returns to the actual returns.</li>
+</ol>
+
+<p>We&rsquo;re going to ignore applying our model to test data while we try to figure out what all the levers do in the neural network cockpit.</p>
+
+<h1 id="data-shaping">Data Shaping</h1>
+
+<blockquote>
+<p>You can skip to the next post if you want to jump right into the LSTM model.</p>
+</blockquote>
+
+<p>Many machine learning examples completely ignore the process of shaping data which is the process of take raw data and shaping it so it&rsquo;s in a format that can be read by our machine learning tools. Often times, this takes much longer than actually setting up and running the machine learning process. Since every data source is slightly different this process includes a lot of trial and error.</p>
+
+<p>After you&rsquo;ve imported your dependencies and connected to your database,
+let&rsquo;s query our database and get the XLF returns. We&rsquo;re going use <code>pandas</code> for this so our results will be returned in a <code>pandas dataframe</code>.</p>
+
+<pre><code>x_query = &quot;&quot;&quot;
+SELECT
+  dt
+, ticker
+, ret
+FROM xlf_returns
+WHERE dt &gt; '1998-12-22'
+AND dt &lt; '2017-02-28'
+ORDER BY dt
+&quot;&quot;&quot;
+
+x_df = pd.read_sql_query(x_query, con=conn)
+</code></pre>
+
+<p>If you type <code>x_df</code> on the command line you should have something that looks like this:</p>
+
+<pre><code>&gt;&gt;&gt; x_df
+              dt ticker       ret
+0     1998-12-23    xlf  0.014745
+1     1998-12-24    xlf  0.006605
+2     1998-12-28    xlf -0.013123
+3     1998-12-29    xlf  0.010638
+4     1998-12-30    xlf -0.003947
+...          ...    ...       ...
+4568  2017-02-21    xlf  0.004904
+4569  2017-02-22    xlf  0.000813
+4570  2017-02-23    xlf  0.000000
+4571  2017-02-24    xlf -0.007720
+4572  2017-02-27    xlf  0.005323
+
+[4573 rows x 3 columns]
+</code></pre>
+
+<p>Before we go on, it&rsquo;s helpful to see what our dataset ultimately needs to look like.</p>
+
+<pre><code>&gt;&gt;&gt; dataset_x
+array([[ 0.01474535],
+       [ 0.00660498],
+       [-0.01312336],
+       ...,
+       [ 0.        ],
+       [-0.00772048],
+       [ 0.00532346]], dtype=float32)
+</code></pre>
+
+<p>We need to take our dataframe and shape it into a <code>numpy.array</code> of datatype <code>float32</code>. This seems pretty straightforward, right? Nope. My first attempt at converting this was to just take <code>x_df.ret</code> and convert it to <code>floast32</code>. I ended up with this:</p>
+
+<pre><code>test = x_df[&quot;ret&quot;].astype('float32')
+
+&gt;&gt;&gt; test
+0       0.014745
+1       0.006605
+2      -0.013123
+3       0.010638
+4      -0.003947
+5      -0.009247
+6       0.000000
+          ...   
+4569    0.000813
+4570    0.000000
+4571   -0.007720
+4572    0.005323
+Name: ret, dtype: float32
+</code></pre>
+
+<p>It got the data type right, <code>float32</code>, but it&rsquo;s just a column of numbers. It&rsquo;s not even an array. We should be able to easily convert that to an array.</p>
+
+<pre><code>test_array = numpy.array(test)
+
+&gt;&gt;&gt; test_array
+array([ 0.01474535,  0.00660498, -0.01312336, ...,  0.,
+       -0.00772048,  0.00532346], dtype=float32)
+</code></pre>
+
+<p>Now we have an array with the right datatype but if you go back and look at what the final dataset needs to look like we actually need an array of arrays. This makes sense when you consider that we would need to be able to use array of past returns as X values to feed into our model. At this point, I would create a <code>for loop</code> to create an array for each value in the array but I inadvertantly ran into another solution.</p>
+
+<pre><code>x_df_wide = x_df.pivot(index=&quot;dt&quot;, columns=&quot;ticker&quot;, values=&quot;ret&quot;)
+
+
+&gt;&gt;&gt; x_df_wide
+ticker           xlf
+dt                  
+1998-12-23  0.014745
+1998-12-24  0.006605
+1998-12-28 -0.013123
+1998-12-29  0.010638
+
+dataset_x = x_df_wide.values.astype('float32')
+
+&gt;&gt;&gt; dataset_x
+array([[ 0.01474535],
+       [ 0.00660498],
+       [-0.01312336],
+       ..., 
+       [ 0.        ],
+       [-0.00772048],
+       [ 0.00532346]], dtype=float32)
+</code></pre>
+
+<p>Here we take the tall dataframe and make it wide by pivoting the dataframe. With only one ticker, we end up with a dataframe that has the dates as the index and XLF as the column with its returns as row values. If we had more than one ticker, we would have a separate column for each header. For some reason, when you convert wide dataframe&rsquo;s values to a numpy array you end up with the shape we need for our model. We also get the added bonus of having figured out how we use additional pull in and shape data with more than one feature. Here&rsquo;s a quick summary of where we&rsquo;re at.</p>
+
+<pre><code># We're using date ranges to avoid `null` values.
+# Get x data
+
+x_query = &quot;&quot;&quot;
+SELECT
+  dt
+, ticker
+, ret
+FROM xlf_returns
+WHERE dt &gt; '1998-12-22'
+AND dt &lt; '2017-02-28'
+ORDER BY dt
+&quot;&quot;&quot;
+
+x_df = pd.read_sql_query(x_query, con=conn)
+x_df_wide = x_df.pivot(index=&quot;dt&quot;, columns=&quot;ticker&quot;, values=&quot;ret&quot;)
+
+# Get y data
+
+y_query = &quot;&quot;&quot;
+SELECT
+  dt
+, ticker
+, ret
+FROM xlf_next_day_returns
+WHERE dt &gt; '1998-12-22'
+AND dt &lt; '2017-02-28'
+ORDER BY dt;
+&quot;&quot;&quot;
+
+y_df = pd.read_sql_query(y_query, con=conn)
+y_df_wide = y_df.pivot(index=&quot;dt&quot;, columns=&quot;ticker&quot;, values=&quot;ret&quot;)
+
+dataset_x = x_df_wide.values.astype('float32')
+dataset_y = y_df_wide.values.astype('float32')
+</code></pre>
+
+<p>The next bit of code splits our dataset so that 67% will be used to train our network while the remainder will be used to test its predictions. Confusingly, you also need to predict against your training data to see how well the model fits your training data. I&rsquo;ll cover more on this later.</p>
+
+<pre><code>train_size = int(len(dataset_x) * 0.67)
+test_size = len(dataset_x) - train_size
+stage_train_x, stage_test_x = dataset_x[0:train_size], dataset_x[train_size:len(dataset_x)]
+train_y,  test_y = dataset_y[0:train_size], dataset_y[train_size:len(dataset_y)]
+</code></pre>
+
+<p>The last thing we have to do is add the time step to the shape of the X value datasets. A numpy array is an object with the property <code>shape</code>. <code>stage_train_x.shape</code> returns <code>(3063, 1)</code> which reflects the number of objects in our array, 3063, and the number of items in each object, 1. That&rsquo;s great but the LSTM model also needs a value for the number of time steps or the lookback period of our data. Since we&rsquo;re only using one day&rsquo;s worth of data, our time step value is 1 and so we&rsquo;ll add that to the <code>shape</code> property.</p>
+
+<pre><code>train_x = numpy.reshape(stage_train_x, (stage_train_x.shape[0], 1, stage_train_x.shape[1]))
+test_x = numpy.reshape(stage_test_x, (stage_test_x.shape[0], 1, stage_test_x.shape[1]))
+</code></pre>
+
+<p>We only need to do this for the X values. Now that we have the right shape, we can finally start building our model.</p>
+
+</div>
+
+        <footer class="post-footer clearfix">
+    
+
+    <div class="share">
+        
+            <a class="icon-twitter" href="https://twitter.com/share?text=LSTM%20Madness%2f02%2fData%20Shaping&url=https%3a%2f%2fventrisco.github.io%2fblog%2flstm_madness_02%2f"
+                onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                <i class="fa fa-twitter"></i>
+                <span class="hidden">Twitter</span>
+            </a>
+        
+
+        
+            <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3a%2f%2fventrisco.github.io%2fblog%2flstm_madness_02%2f"
+                onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                <i class="fa fa-facebook"></i>
+                <span class="hidden">Facebook</span>
+            </a>
+        
+
+        
+            <a class="icon-google-plus" href="https://plus.google.com/share?url=https%3a%2f%2fventrisco.github.io%2fblog%2flstm_madness_02%2f"
+              onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+              <i class="fa fa-google-plus"></i>
+                <span class="hidden">Google+</span>
+            </a>
+        
+        
+    </div>
+</footer>
+
+        
+    <div class="comments">
+        <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'ventrisco';
+    var disqus_identifier = 'https:\/\/ventrisco.github.io\/blog\/lstm_madness_02\/';
+    var disqus_title = 'LSTM Madness\/02\/Data Shaping';
+    var disqus_url = 'https:\/\/ventrisco.github.io\/blog\/lstm_madness_02\/';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    </article>
+</div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="container">
+                <div class="site-title-wrapper">
+                    <h1 class="site-title">
+                        <a title="Ventris &amp; Co" href="https://ventrisco.github.io/">Ventris &amp; Co</a>
+                    </h1>
+                    <a class="button-square button-jump-top js-jump-top" href="#">
+                        <i class="fa fa-angle-up"></i>
+                    </a>
+                </div>
+
+                <p class="footer-copyright">
+                    <span>&copy; 2017 / Powered by <a href="https://gohugo.io/">Hugo</a></span>
+                </p>
+                <p class="footer-copyright">
+                    <span><a href="https://github.com/roryg/ghostwriter">Ghostwriter theme</a> By <a href="http://jollygoodthemes.com">JollyGoodThemes</a></span>
+                    <span>/ <a href="https://github.com/jbub/ghostwriter">Ported</a> to Hugo By <a href="https://github.com/jbub">jbub</a></span>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://ventrisco.github.io/js/jquery-1.11.3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.9.0/highlight.min.js"></script>
+        <script src="https://ventrisco.github.io/js/jquery.fitvids.js"></script>
+        <script src="https://ventrisco.github.io/js/scripts.js"></script>
+    </body>
+</html>
+

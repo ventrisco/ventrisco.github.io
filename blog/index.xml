@@ -6,8 +6,204 @@
     <description>Recent content in Blogs on Ventris &amp; Co</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 06 Mar 2017 21:27:23 -0800</lastBuildDate>
+    <lastBuildDate>Tue, 07 Mar 2017 13:33:49 -0800</lastBuildDate>
     <atom:link href="https://ventrisco.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>LSTM Madness/02/Data Shaping</title>
+      <link>https://ventrisco.github.io/blog/lstm_madness_02/</link>
+      <pubDate>Tue, 07 Mar 2017 13:33:49 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/blog/lstm_madness_02/</guid>
+      <description>
+
+&lt;h1 id=&#34;tomorrow-never-knows&#34;&gt;Tomorrow never knows&lt;/h1&gt;
+
+&lt;p&gt;For our first neural network, we&amp;rsquo;ll try to answer the most obvious question:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Can today&amp;rsquo;s return predict tomorrow&amp;rsquo;s return?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Let&amp;rsquo;s break this down to actionable tasks:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;We&amp;rsquo;ll need to get today&amp;rsquo;s returns for our x values.&lt;/li&gt;
+&lt;li&gt;We&amp;rsquo;ll need to get the next returns for our y values.&lt;/li&gt;
+&lt;li&gt;We&amp;rsquo;ll need to shape the data for Keras&lt;/li&gt;
+&lt;li&gt;We&amp;rsquo;ll need to setup, compile and fit the model.&lt;/li&gt;
+&lt;li&gt;We can then use the model to make predictions on our existing data.&lt;/li&gt;
+&lt;li&gt;We&amp;rsquo;ll plot the predicted returns to the actual returns.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We&amp;rsquo;re going to ignore applying our model to test data while we try to figure out what all the levers do in the neural network cockpit.&lt;/p&gt;
+
+&lt;h1 id=&#34;data-shaping&#34;&gt;Data Shaping&lt;/h1&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;You can skip to the next post if you want to jump right into the LSTM model.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Many machine learning examples completely ignore the process of shaping data which is the process of take raw data and shaping it so it&amp;rsquo;s in a format that can be read by our machine learning tools. Often times, this takes much longer than actually setting up and running the machine learning process. Since every data source is slightly different this process includes a lot of trial and error.&lt;/p&gt;
+
+&lt;p&gt;After you&amp;rsquo;ve imported your dependencies and connected to your database,
+let&amp;rsquo;s query our database and get the XLF returns. We&amp;rsquo;re going use &lt;code&gt;pandas&lt;/code&gt; for this so our results will be returned in a &lt;code&gt;pandas dataframe&lt;/code&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;x_query = &amp;quot;&amp;quot;&amp;quot;
+SELECT
+  dt
+, ticker
+, ret
+FROM xlf_returns
+WHERE dt &amp;gt; &#39;1998-12-22&#39;
+AND dt &amp;lt; &#39;2017-02-28&#39;
+ORDER BY dt
+&amp;quot;&amp;quot;&amp;quot;
+
+x_df = pd.read_sql_query(x_query, con=conn)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you type &lt;code&gt;x_df&lt;/code&gt; on the command line you should have something that looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; x_df
+              dt ticker       ret
+0     1998-12-23    xlf  0.014745
+1     1998-12-24    xlf  0.006605
+2     1998-12-28    xlf -0.013123
+3     1998-12-29    xlf  0.010638
+4     1998-12-30    xlf -0.003947
+...          ...    ...       ...
+4568  2017-02-21    xlf  0.004904
+4569  2017-02-22    xlf  0.000813
+4570  2017-02-23    xlf  0.000000
+4571  2017-02-24    xlf -0.007720
+4572  2017-02-27    xlf  0.005323
+
+[4573 rows x 3 columns]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Before we go on, it&amp;rsquo;s helpful to see what our dataset ultimately needs to look like.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; dataset_x
+array([[ 0.01474535],
+       [ 0.00660498],
+       [-0.01312336],
+       ...,
+       [ 0.        ],
+       [-0.00772048],
+       [ 0.00532346]], dtype=float32)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;We need to take our dataframe and shape it into a &lt;code&gt;numpy.array&lt;/code&gt; of datatype &lt;code&gt;float32&lt;/code&gt;. This seems pretty straightforward, right? Nope. My first attempt at converting this was to just take &lt;code&gt;x_df.ret&lt;/code&gt; and convert it to &lt;code&gt;floast32&lt;/code&gt;. I ended up with this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;test = x_df[&amp;quot;ret&amp;quot;].astype(&#39;float32&#39;)
+
+&amp;gt;&amp;gt;&amp;gt; test
+0       0.014745
+1       0.006605
+2      -0.013123
+3       0.010638
+4      -0.003947
+5      -0.009247
+6       0.000000
+          ...   
+4569    0.000813
+4570    0.000000
+4571   -0.007720
+4572    0.005323
+Name: ret, dtype: float32
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It got the data type right, &lt;code&gt;float32&lt;/code&gt;, but it&amp;rsquo;s just a column of numbers. It&amp;rsquo;s not even an array. We should be able to easily convert that to an array.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;test_array = numpy.array(test)
+
+&amp;gt;&amp;gt;&amp;gt; test_array
+array([ 0.01474535,  0.00660498, -0.01312336, ...,  0.,
+       -0.00772048,  0.00532346], dtype=float32)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now we have an array with the right datatype but if you go back and look at what the final dataset needs to look like we actually need an array of arrays. This makes sense when you consider that we would need to be able to use array of past returns as X values to feed into our model. At this point, I would create a &lt;code&gt;for loop&lt;/code&gt; to create an array for each value in the array but I inadvertantly ran into another solution.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;x_df_wide = x_df.pivot(index=&amp;quot;dt&amp;quot;, columns=&amp;quot;ticker&amp;quot;, values=&amp;quot;ret&amp;quot;)
+
+
+&amp;gt;&amp;gt;&amp;gt; x_df_wide
+ticker           xlf
+dt                  
+1998-12-23  0.014745
+1998-12-24  0.006605
+1998-12-28 -0.013123
+1998-12-29  0.010638
+
+dataset_x = x_df_wide.values.astype(&#39;float32&#39;)
+
+&amp;gt;&amp;gt;&amp;gt; dataset_x
+array([[ 0.01474535],
+       [ 0.00660498],
+       [-0.01312336],
+       ..., 
+       [ 0.        ],
+       [-0.00772048],
+       [ 0.00532346]], dtype=float32)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here we take the tall dataframe and make it wide by pivoting the dataframe. With only one ticker, we end up with a dataframe that has the dates as the index and XLF as the column with its returns as row values. If we had more than one ticker, we would have a separate column for each header. For some reason, when you convert wide dataframe&amp;rsquo;s values to a numpy array you end up with the shape we need for our model. We also get the added bonus of having figured out how we use additional pull in and shape data with more than one feature. Here&amp;rsquo;s a quick summary of where we&amp;rsquo;re at.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# We&#39;re using date ranges to avoid `null` values.
+# Get x data
+
+x_query = &amp;quot;&amp;quot;&amp;quot;
+SELECT
+  dt
+, ticker
+, ret
+FROM xlf_returns
+WHERE dt &amp;gt; &#39;1998-12-22&#39;
+AND dt &amp;lt; &#39;2017-02-28&#39;
+ORDER BY dt
+&amp;quot;&amp;quot;&amp;quot;
+
+x_df = pd.read_sql_query(x_query, con=conn)
+x_df_wide = x_df.pivot(index=&amp;quot;dt&amp;quot;, columns=&amp;quot;ticker&amp;quot;, values=&amp;quot;ret&amp;quot;)
+
+# Get y data
+
+y_query = &amp;quot;&amp;quot;&amp;quot;
+SELECT
+  dt
+, ticker
+, ret
+FROM xlf_next_day_returns
+WHERE dt &amp;gt; &#39;1998-12-22&#39;
+AND dt &amp;lt; &#39;2017-02-28&#39;
+ORDER BY dt;
+&amp;quot;&amp;quot;&amp;quot;
+
+y_df = pd.read_sql_query(y_query, con=conn)
+y_df_wide = y_df.pivot(index=&amp;quot;dt&amp;quot;, columns=&amp;quot;ticker&amp;quot;, values=&amp;quot;ret&amp;quot;)
+
+dataset_x = x_df_wide.values.astype(&#39;float32&#39;)
+dataset_y = y_df_wide.values.astype(&#39;float32&#39;)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The next bit of code splits our dataset so that 67% will be used to train our network while the remainder will be used to test its predictions. Confusingly, you also need to predict against your training data to see how well the model fits your training data. I&amp;rsquo;ll cover more on this later.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;train_size = int(len(dataset_x) * 0.67)
+test_size = len(dataset_x) - train_size
+stage_train_x, stage_test_x = dataset_x[0:train_size], dataset_x[train_size:len(dataset_x)]
+train_y,  test_y = dataset_y[0:train_size], dataset_y[train_size:len(dataset_y)]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The last thing we have to do is add the time step to the shape of the X value datasets. A numpy array is an object with the property &lt;code&gt;shape&lt;/code&gt;. &lt;code&gt;stage_train_x.shape&lt;/code&gt; returns &lt;code&gt;(3063, 1)&lt;/code&gt; which reflects the number of objects in our array, 3063, and the number of items in each object, 1. That&amp;rsquo;s great but the LSTM model also needs a value for the number of time steps or the lookback period of our data. Since we&amp;rsquo;re only using one day&amp;rsquo;s worth of data, our time step value is 1 and so we&amp;rsquo;ll add that to the &lt;code&gt;shape&lt;/code&gt; property.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;train_x = numpy.reshape(stage_train_x, (stage_train_x.shape[0], 1, stage_train_x.shape[1]))
+test_x = numpy.reshape(stage_test_x, (stage_test_x.shape[0], 1, stage_test_x.shape[1]))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;We only need to do this for the X values. Now that we have the right shape, we can finally start building our model.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>LSTM Madness/01/Data Prep</title>
@@ -21,7 +217,7 @@
 
 &lt;p&gt;Look at the previous posts about how to get data from Yahoo and use that to create a script to get the historical data from the XLF and each of its components. Don’t know the XLF components by heart? You can find them right here.&lt;/p&gt;
 
-&lt;p&gt;If that’s too much for you, you can just run &lt;code&gt;python main.py&lt;/code&gt; in &lt;code&gt;/get_yahoo_data&lt;/code&gt; of this repo. You’re going to have to run it twice, once for the components and once for just the XLF price series. Save them to different buffers because we’re going to copy them to different tables.&lt;/p&gt;
+&lt;p&gt;If that’s too much for you, you can just run &lt;code&gt;python main.py&lt;/code&gt; in &lt;code&gt;/get_yahoo_data&lt;/code&gt; of this &lt;a href=&#34;https://github.com/ventrisco/lstm-madness&#34;&gt;repo&lt;/a&gt;. You’re going to have to run it twice, once for the components and once for just the XLF price series. Save them to different buffers because we’re going to copy them to different tables.&lt;/p&gt;
 
 &lt;h1 id=&#34;in-the-beginning&#34;&gt;In the beginning&lt;/h1&gt;
 
