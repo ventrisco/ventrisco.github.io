@@ -28,12 +28,12 @@
 &lt;p&gt;Let&amp;rsquo;s break this down to actionable tasks:&lt;/p&gt;
 
 &lt;ol&gt;
-&lt;li&gt;We&amp;rsquo;ll need to get today&amp;rsquo;s returns for our x values.&lt;/li&gt;
-&lt;li&gt;We&amp;rsquo;ll need to get the next returns for our y values.&lt;/li&gt;
-&lt;li&gt;We&amp;rsquo;ll need to shape the data for Keras&lt;/li&gt;
-&lt;li&gt;We&amp;rsquo;ll need to setup, compile and fit the model.&lt;/li&gt;
-&lt;li&gt;We can then use the model to make predictions on our existing data.&lt;/li&gt;
-&lt;li&gt;We&amp;rsquo;ll plot the predicted returns to the actual returns.&lt;/li&gt;
+&lt;li&gt;Get today&amp;rsquo;s returns for our x values.&lt;/li&gt;
+&lt;li&gt;Get the next returns for our y values.&lt;/li&gt;
+&lt;li&gt;Shape the data for Keras&lt;/li&gt;
+&lt;li&gt;Setup, compile and fit the model.&lt;/li&gt;
+&lt;li&gt;Make predictions on our existing data.&lt;/li&gt;
+&lt;li&gt;Plot the predicted returns to the actual returns.&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;We&amp;rsquo;re going to ignore applying our model to test data while we try to figure out what all the levers do in the neural network cockpit.&lt;/p&gt;
