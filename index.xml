@@ -6,13 +6,13 @@
     <description>Recent content on Ventris &amp; Co</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 07 Mar 2017 21:58:50 -0800</lastBuildDate>
+    <lastBuildDate>Wed, 08 Mar 2017 21:58:50 -0800</lastBuildDate>
     <atom:link href="https://ventrisco.github.io/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>LSTM MADNESS/03/Our first model</title>
       <link>https://ventrisco.github.io/blog/lstm_madness_03/</link>
-      <pubDate>Tue, 07 Mar 2017 21:58:50 -0800</pubDate>
+      <pubDate>Wed, 08 Mar 2017 21:58:50 -0800</pubDate>
       
       <guid>https://ventrisco.github.io/blog/lstm_madness_03/</guid>
       <description>
@@ -30,7 +30,7 @@
 &lt;li&gt;Plot the predicted returns to the actual returns.&lt;/li&gt;
 &lt;/ol&gt;
 
-&lt;p&gt;In this post, we&amp;rsquo;ll cover 4 through 6 and have our first model.&lt;/p&gt;
+&lt;p&gt;In this post, we&amp;rsquo;ll cover 4 through 6 and have our first model. The code for this post is located &lt;a href=&#34;https://github.com/ventrisco/lstm-madness/tree/master/01&#34;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h1 id=&#34;model-time&#34;&gt;Model time&lt;/h1&gt;
 
