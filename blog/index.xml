@@ -201,7 +201,9 @@ train_y,  test_y = dataset_y[0:train_size], dataset_y[train_size:len(dataset_y)]
 test_x = numpy.reshape(stage_test_x, (stage_test_x.shape[0], 1, stage_test_x.shape[1]))
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;We only need to do this for the X values. Now that we have the right shape, we can finally start building our model.&lt;/p&gt;
+&lt;p&gt;We only need to do this for the X values.&lt;/p&gt;
+
+&lt;p&gt;Now that we have the right shape, we can finally start building our model.&lt;/p&gt;
 </description>
     </item>
     
