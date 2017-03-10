@@ -6,11 +6,49 @@
     <description>Recent content on Ventris &amp; Co</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 08 Mar 2017 21:58:50 -0800</lastBuildDate>
+    <lastBuildDate>Thu, 09 Mar 2017 08:52:59 -0800</lastBuildDate>
     <atom:link href="https://ventrisco.github.io/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>LSTM MADNESS/03/Our first model</title>
+      <title>LSTM Madness/04/First Iterations</title>
+      <link>https://ventrisco.github.io/blog/lstm_madness_04/</link>
+      <pubDate>Thu, 09 Mar 2017 08:52:59 -0800</pubDate>
+      
+      <guid>https://ventrisco.github.io/blog/lstm_madness_04/</guid>
+      <description>
+
+&lt;h1 id=&#34;hyper-time&#34;&gt;Hyper Time&lt;/h1&gt;
+
+&lt;p&gt;So our initial model was a bust. You should embrace that because in research knowing what doesn&amp;rsquo;t work is just as important as figuring out what does. Let&amp;rsquo;s start messing with some hyperparameters.&lt;/p&gt;
+
+&lt;p&gt;The first thing that I can think of tweaking is the number of epochs. I&amp;rsquo;m going to increase epochs from 100 to 1000. We run the risk of overfitting the model but it&amp;rsquo;s better than a model that doesn&amp;rsquo;t fit all.&lt;/p&gt;
+
+&lt;p&gt;Since we&amp;rsquo;re going to increase our epochs to 1000, I&amp;rsquo;m going to increase our batch size to 32 in order to decrease the run time. Our initial model ran 100 epochs with a batch size of 1. It took about 14 seconds to run each epoch on my machine. That&amp;rsquo;s because it&amp;rsquo;s going only fitting 1 data point for each epoch. Why 32? It&amp;rsquo;s an arbitrary number based on some examples on Keras&amp;rsquo; site, don&amp;rsquo;t read anything into it.&lt;/p&gt;
+
+&lt;h1 id=&#34;that-s-interesting&#34;&gt;That&amp;rsquo;s Interesting&lt;/h1&gt;
+
+&lt;p&gt;Here&amp;rsquo;s the cumulative return of our first model.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/01/cum_ret.png&#34; alt=&#34;Cumulative Return&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Here&amp;rsquo;s the scatterplot of our predicted returns vs the actual returns for our train data.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/01/scatter.png&#34; alt=&#34;Scatter&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This is much better than our first model since it actually &amp;ldquo;fits&amp;rdquo; a linear line to some large trends. However, it&amp;rsquo;s odd that it catches those trend changes pretty late even on the train data. The scatterplot is interesting in that it seems as if the larger predictions are negative which is odd when you consider that down markets are volatile to the downside and upside.&lt;/p&gt;
+
+&lt;p&gt;Before we move one, let&amp;rsquo;s take a look at the profit and loss.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://raw.githubusercontent.com/ventrisco/lstm-madness/master/01/01/cum_profit.png&#34; alt=&#34;Cumulative Profit&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Given that this ignores trading costs, it would be like Chinese Water torture trading this model from 2003 to 2008. Since the profits are based on our training data we shouldn&amp;rsquo;t get too excited but a 250% return isn&amp;rsquo;t terrible.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s look at a couple iterations of this next to see if we can better our returns.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>LSTM Madness/03/Our first model</title>
       <link>https://ventrisco.github.io/blog/lstm_madness_03/</link>
       <pubDate>Wed, 08 Mar 2017 21:58:50 -0800</pubDate>
       
